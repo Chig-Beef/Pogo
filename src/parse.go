@@ -9,11 +9,22 @@ type Parser struct {
 	curPos   int
 	curToken Token
 	source   []Token
+	markers  []int
+}
+
+func (p *Parser) setMarker() {
+	p.markers = append(p.markers, p.curPos)
+}
+
+func (p *Parser) gotoMarker() {
+	p.curPos = p.markers[len(p.markers)-1]
+	p.curToken = p.source[p.curPos]
+	p.markers = p.markers[:len(p.markers)-1]
 }
 
 func (p *Parser) nextToken() {
 	p.curPos++
-	if p.curPos == len(p.source) {
+	if p.curPos >= len(p.source) {
 		p.curToken = Token{} // Nil
 	} else {
 		p.curToken = p.source[p.curPos]
@@ -72,6 +83,20 @@ func (p *Parser) replaceIndents(input []Token) []Token {
 		}
 
 		output = append(output, input[i])
+	}
+
+	c_count := 0
+	ac_count := 0
+	for i := 0; i < len(output); i++ {
+		if output[i].code == tokenCode["COLON"] {
+			c_count++
+		} else if output[i].code == tokenCode["ANTI_COLON"] {
+			ac_count++
+		}
+	}
+
+	for i := 0; i < c_count-ac_count; i++ {
+		output = append(output, Token{tokenCode["ANTI_COLON"], ":"})
 	}
 
 	return output
@@ -205,9 +230,6 @@ func (p *Parser) statement() (Structure, error) {
 	} else if p.curToken.code == tokenCode["K_IF"] {
 		s = Structure{[]Structure{}, structureCode["ST_IF_ELSE_BLOCK"], "ST_IF_ELSE_BLOCK"}
 
-		s.children = append(s.children, Structure{[]Structure{}, structureCode["ST_IF_ELSE_BLOCK"], p.curToken.text})
-		p.nextToken()
-
 		temp, err := p.s_if()
 		if err != nil {
 			return s, err
@@ -229,6 +251,45 @@ func (p *Parser) statement() (Structure, error) {
 			return s, err
 		}
 		s.children = append(s.children, temp)
+	} else if p.curToken.code == tokenCode["IDENTIFIER"] {
+		if p.peek().code == tokenCode["COLON"] {
+			s = Structure{[]Structure{}, structureCode["ST_DECLARATION"], "ST_DECLARATION"}
+			s.children = append(s.children, Structure{[]Structure{}, structureCode["IDENTIFIER"], p.curToken.text})
+			p.nextToken()
+
+			temps, err := p.checkTokenRange([]string{
+				"COLON",
+				"IDENTIFIER",
+				"ASSIGN",
+			})
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temps...)
+
+			temp, err := p.literal()
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temp)
+		} else {
+			s = Structure{[]Structure{}, structureCode["ST_MANIPULATION"], "ST_MANIPULATION"}
+			s.children = append(s.children, Structure{[]Structure{}, structureCode["IDENTIFIER"], p.curToken.text})
+			p.nextToken()
+
+			temp, err := p.checkToken("ASSIGN")
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temp)
+			p.nextToken()
+
+			temp, err = p.literal()
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temp)
+		}
 	}
 
 	if len(s.children) == 0 {
@@ -247,6 +308,8 @@ func (p *Parser) block() (Structure, error) {
 			return block, err
 		}
 		block.children = append(block.children, statement)
+
+		p.nextToken()
 
 		if p.curToken.code == tokenCode["ANTI_COLON"] {
 			break
@@ -285,6 +348,13 @@ func (p *Parser) s_if() (Structure, error) {
 	s.children = append(s.children, temp)
 	p.nextToken()
 
+	temp, err = p.checkToken("NEWLINE")
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
 	temp, err = p.block()
 	if err != nil {
 		return s, err
@@ -303,7 +373,65 @@ func (p *Parser) s_else() (Structure, error) {
 }
 
 func (p *Parser) comparison() (Structure, error) {
-	return Structure{}, nil
+	s := Structure{[]Structure{}, structureCode["COMPARISON"], "COMPARISON"}
+
+	temp, err := p.literal()
+	if err != nil {
+		temp, err = p.checkToken("IDENTIFIER")
+		if err != nil {
+			return s, err
+		}
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temp, err = p.comparator()
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temp, err = p.literal()
+	if err != nil {
+		temp, err = p.checkToken("IDENTIFIER")
+		if err != nil {
+			return s, err
+		}
+	}
+	s.children = append(s.children, temp)
+
+	return s, nil
+}
+
+func (p *Parser) comparator() (Structure, error) {
+	if p.curToken.code == tokenCode["CO_EQUALS"] {
+		return Structure{[]Structure{}, structureCode["CO_EQUALS"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["CO_NOT_EQUALS"] {
+		return Structure{[]Structure{}, structureCode["CO_NOT_EQUALS"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["CO_GT"] {
+		return Structure{[]Structure{}, structureCode["CO_GT"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["CO_GT_EQUALS"] {
+		return Structure{[]Structure{}, structureCode["CO_GT_EQUALS"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["CO_LT"] {
+		return Structure{[]Structure{}, structureCode["CO_LT"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["CO_LT_EQUALS"] {
+		return Structure{[]Structure{}, structureCode["CO_LT_EQUALS"], p.curToken.text}, nil
+	} else {
+		return Structure{}, errors.New("[Parse (comparator)] Expected comparator, got " + p.curToken.text)
+	}
+}
+
+func (p *Parser) literal() (Structure, error) {
+	if p.curToken.code == tokenCode["L_BOOL"] {
+		return Structure{[]Structure{}, structureCode["L_BOOL"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["L_INT"] {
+		return Structure{[]Structure{}, structureCode["L_INT"], p.curToken.text}, nil
+	} else if p.curToken.code == tokenCode["L_STRING"] {
+		return Structure{[]Structure{}, structureCode["L_STRING"], p.curToken.text}, nil
+	} else {
+		return Structure{}, errors.New("[Parse (literal)] Expected literal, got " + p.curToken.text)
+	}
 }
 
 func (p *Parser) checkTokenRange(tokenKeys []string) ([]Structure, error) {
