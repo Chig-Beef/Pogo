@@ -184,6 +184,17 @@ func (l *Lexer) lex(input []byte) []Token {
 			}
 		}
 
+		// String literal
+		if l.curChar == '"' {
+			start := l.curPos
+			l.nextChar()
+			for l.curChar != '"' {
+				l.nextChar()
+			}
+			num := string(l.source[start : l.curPos+1])
+			token = Token{tokenCode["L_STRING"], num}
+		}
+
 		// Integer literal
 		if unicode.IsDigit(rune(l.curChar)) {
 			start := l.curPos
