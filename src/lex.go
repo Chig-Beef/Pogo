@@ -81,7 +81,7 @@ func (l *Lexer) lex(input []byte) []Token {
 
 		// Other
 		if l.curChar == '\r' && l.peek() == '\n' {
-			token = Token{tokenCode["NEWLINE"], "\n"}
+			token = Token{tokenCode["NEWLINE"], "NEWLINE"}
 			l.nextChar()
 		} else if l.curChar == ',' {
 			token = Token{tokenCode["SEP"], ","}
@@ -106,7 +106,7 @@ func (l *Lexer) lex(input []byte) []Token {
 		// Comparison Operands
 		if l.curChar == '=' {
 			if l.peek() == '=' {
-				token = Token{tokenCode["CO_EQUALS"], "="}
+				token = Token{tokenCode["CO_EQUALS"], "=="}
 				l.nextChar()
 			} else {
 				token = Token{tokenCode["ASSIGN"], "="}

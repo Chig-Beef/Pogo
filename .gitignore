@@ -1,0 +1,2 @@
+git rm --cached src/Pogo.exe
+git rm --cached src/test.bat
