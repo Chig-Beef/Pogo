@@ -9,9 +9,10 @@ type Parser struct {
 	curPos   int
 	curToken Token
 	source   []Token
-	markers  []int
+	//	markers  []int
 }
 
+/*
 func (p *Parser) setMarker() {
 	p.markers = append(p.markers, p.curPos)
 }
@@ -21,6 +22,7 @@ func (p *Parser) gotoMarker() {
 	p.curToken = p.source[p.curPos]
 	p.markers = p.markers[:len(p.markers)-1]
 }
+*/
 
 func (p *Parser) nextToken() {
 	p.curPos++
@@ -273,6 +275,33 @@ func (p *Parser) statement() (Structure, error) {
 			return s, err
 		}
 		s.children = append(s.children, temp)
+	} else if p.curToken.code == tokenCode["IB_PRINT"] {
+		s = Structure{[]Structure{}, structureCode["ST_CALL"], "ST_CALL"}
+		s.children = append(s.children, Structure{[]Structure{}, structureCode["IB_PRINT"], p.curToken.text})
+		p.nextToken()
+
+		temp, err := p.checkToken("L_PAREN")
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temp, err = p.literal()
+		if err != nil {
+			temp, err = p.checkToken("IDENTIFIER")
+			if err != nil {
+				return s, err
+			}
+		}
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temp, err = p.checkToken("R_PAREN")
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
 	} else if p.curToken.code == tokenCode["IDENTIFIER"] {
 		if p.peek().code == tokenCode["COLON"] {
 			s = Structure{[]Structure{}, structureCode["ST_DECLARATION"], "ST_DECLARATION"}
@@ -312,33 +341,6 @@ func (p *Parser) statement() (Structure, error) {
 			}
 			s.children = append(s.children, temp)
 		}
-	} else if p.curToken.code == tokenCode["IB_PRINT"] {
-		s = Structure{[]Structure{}, structureCode["ST_CALL"], "ST_CALL"}
-		s.children = append(s.children, Structure{[]Structure{}, structureCode["IDENTIFIER"], p.curToken.text})
-		p.nextToken()
-
-		temp, err := p.checkToken("L_PAREN")
-		if err != nil {
-			return s, err
-		}
-		s.children = append(s.children, temp)
-		p.nextToken()
-
-		temp, err = p.literal()
-		if err != nil {
-			temp, err = p.checkToken("IDENTIFIER")
-			if err != nil {
-				return s, err
-			}
-		}
-		s.children = append(s.children, temp)
-		p.nextToken()
-
-		temp, err = p.checkToken("R_PAREN")
-		if err != nil {
-			return s, err
-		}
-		s.children = append(s.children, temp)
 	}
 
 	if len(s.children) == 0 {

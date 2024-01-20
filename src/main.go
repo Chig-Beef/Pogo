@@ -14,16 +14,32 @@ func main() {
 }
 
 func compile_file(fileName string) {
-	readFile, err := os.ReadFile(fileName)
+	readFile, err := os.ReadFile(fileName + ".py")
 	if err != nil {
 		log.Fatal("[main (compile_file)] File error")
 		return
 	}
 
-	compile(readFile)
+	output := compile(readFile)
+
+	// Write to the file and close it
+	f, err := os.Create("../Output/" + fileName + ".go")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	f.WriteString(output)
+	err = f.Sync()
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = f.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
-func compile(input []byte) {
+func compile(input []byte) string {
 	//fmt.Println(input)
 
 	// Lex
@@ -36,10 +52,18 @@ func compile(input []byte) {
 	pS := parser.replaceIndents(lexSource)
 	//fmt.Println(pS)
 	ast := parser.parse(pS)
+	//fmt.Println(ast)
+	//fmt.Println(ast.stringify())
 
 	// Optimize
 
 	// Emit
-
-	fmt.Println(ast.stringify())
+	emitter := Emitter{}
+	emitSource, err := emitter.emit(ast)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Final code
+	//fmt.Println(emitSource)
+	return "package main\nfunc main() {\n" + emitSource + "}"
 }
