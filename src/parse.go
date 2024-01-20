@@ -255,7 +255,7 @@ func (p *Parser) statement() (Structure, error) {
 		if err != nil {
 			return s, err
 		}
-		s.children = append(s.children, temps...)
+		s.children = append(s.children, temps[:2]...)
 
 		temp, err = p.block()
 		if err != nil {
@@ -420,7 +420,7 @@ func (p *Parser) s_if() (Structure, error) {
 	if err != nil {
 		return s, err
 	}
-	s.children = append(s.children, temps...)
+	s.children = append(s.children, temps[0])
 
 	temp, err = p.block()
 	if err != nil {
