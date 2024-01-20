@@ -29,6 +29,7 @@ var structureCode map[string]int = map[string]int{
 	"ST_FOR":          5,
 	"ST_DECLARATION":  6,
 	"ST_MANIPULATION": 7,
+	"ST_CALL":         8,
 
 	// Other
 	"BLOCK":        32,
