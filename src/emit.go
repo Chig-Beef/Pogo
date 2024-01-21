@@ -14,6 +14,20 @@ func (e *Emitter) emit(ast Structure) (string, error) {
 		return output, errors.New("[Emit (emit)] ILLEGAL structure found in final code")
 	}
 
+	// Override for loops
+	if ast.code == structureCode["ST_FOR"] {
+		identifier := ast.children[1].text
+		output += "\n" + ast.children[0].text + " " + identifier + " := " + ast.children[5].text + ";"
+		output += identifier + " < " + ast.children[7].text + ";"
+		output += identifier + "++"
+		temp, err := e.emit(ast.children[10])
+		if err != nil {
+			return output, err
+		}
+		output += " " + temp
+		return output, nil
+	}
+
 	// Own text
 	val, exists := translation[ast.code]
 	if !exists {
@@ -55,6 +69,11 @@ var translation map[int]string = map[int]string{
 	structureCode["NEWLINE"]:    "\n",
 	structureCode["ANTI_COLON"]: "}",
 
+	// Keywords
+	structureCode["K_IF"]:   "\nif",
+	structureCode["K_ELIF"]: "else if",
+	structureCode["K_ELSE"]: "else",
+
 	// In-built functions
 	structureCode["IB_PRINT"]: "println",
 
@@ -79,9 +98,6 @@ var directs []int = []int{
 
 	// Keywords
 	structureCode["K_FOR"],
-	structureCode["K_IF"],
-	structureCode["K_ELIF"],
-	structureCode["K_ELSE"],
 
 	// Math operands
 	structureCode["MO_PLUS"],

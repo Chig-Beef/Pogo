@@ -9,10 +9,9 @@ type Parser struct {
 	curPos   int
 	curToken Token
 	source   []Token
-	//	markers  []int
+	markers  []int
 }
 
-/*
 func (p *Parser) setMarker() {
 	p.markers = append(p.markers, p.curPos)
 }
@@ -22,7 +21,6 @@ func (p *Parser) gotoMarker() {
 	p.curToken = p.source[p.curPos]
 	p.markers = p.markers[:len(p.markers)-1]
 }
-*/
 
 func (p *Parser) nextToken() {
 	p.curPos++
@@ -270,22 +268,32 @@ func (p *Parser) statement() (Structure, error) {
 			return s, err
 		}
 		s.children = append(s.children, temp)
-		p.nextToken()
 
+		p.setMarker()
+		p.nextTokenNoNotes()
+
+		extra_found := false
 		for p.curToken.code == tokenCode["K_ELIF"] {
+			extra_found = true
 			temp, err = p.s_elif()
 			if err != nil {
 				return s, err
 			}
 			s.children = append(s.children, temp)
-			p.nextToken()
+			p.nextTokenNoNotes()
 		}
 
-		temp, err = p.s_else()
-		if err != nil {
-			return s, err
+		if p.curToken.code == tokenCode["K_ELSE"] {
+			extra_found = true
+			temp, err = p.s_else()
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temp)
 		}
-		s.children = append(s.children, temp)
+		if !extra_found {
+			p.gotoMarker()
+		}
 	} else if p.curToken.code == tokenCode["IB_PRINT"] {
 		s = Structure{[]Structure{}, structureCode["ST_CALL"], "ST_CALL"}
 		s.children = append(s.children, Structure{[]Structure{}, structureCode["IB_PRINT"], p.curToken.text})
@@ -432,11 +440,66 @@ func (p *Parser) s_if() (Structure, error) {
 }
 
 func (p *Parser) s_elif() (Structure, error) {
-	return Structure{}, nil
+	s := Structure{[]Structure{}, structureCode["ST_ELIF"], "ST_ELIF"}
+
+	temp, err := p.checkToken("K_ELIF")
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temp, err = p.comparison()
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temps, err := p.checkTokenRange([]string{
+		"COLON",
+		"NEWLINE",
+	})
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temps[0])
+
+	temp, err = p.block()
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+
+	return s, nil
 }
 
 func (p *Parser) s_else() (Structure, error) {
-	return Structure{}, nil
+	s := Structure{[]Structure{}, structureCode["ST_ELSE"], "ST_ELSE"}
+
+	temp, err := p.checkToken("K_ELSE")
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temps, err := p.checkTokenRange([]string{
+		"COLON",
+		"NEWLINE",
+	})
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temps[0])
+
+	temp, err = p.block()
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+
+	return s, nil
 }
 
 func (p *Parser) expression() (Structure, error) {
