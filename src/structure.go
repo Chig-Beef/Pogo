@@ -27,9 +27,10 @@ var structureCode map[string]int = map[string]int{
 	"ST_ELIF":         3,
 	"ST_ELSE":         4,
 	"ST_FOR":          5,
-	"ST_DECLARATION":  6,
-	"ST_MANIPULATION": 7,
-	"ST_CALL":         8,
+	"ST_WHILE":        6,
+	"ST_DECLARATION":  7,
+	"ST_MANIPULATION": 8,
+	"ST_CALL":         9,
 
 	// Other
 	"BLOCK":        32,
@@ -61,6 +62,8 @@ var structureCode map[string]int = map[string]int{
 	"K_IF":     68,
 	"K_ELIF":   69,
 	"K_ELSE":   70,
+	"K_CLASS":  71,
+	"K_WHILE":  72,
 
 	// In-built functions
 	"IB_PRINT": 96,

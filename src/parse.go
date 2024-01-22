@@ -279,6 +279,33 @@ func (p *Parser) statement() (Structure, error) {
 			return s, err
 		}
 		s.children = append(s.children, temp)
+	} else if p.curToken.code == tokenCode["K_WHILE"] {
+		s = Structure{[]Structure{}, structureCode["ST_WHILE"], "ST_WHILE"}
+
+		s.children = append(s.children, Structure{[]Structure{}, structureCode["K_WHILE"], p.curToken.text})
+		p.nextToken()
+
+		temp, err := p.comparison()
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temps, err := p.checkTokenRange([]string{
+			"COLON",
+			"NEWLINE",
+		})
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temps...)
+
+		temp, err = p.block()
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
 	} else if p.curToken.code == tokenCode["K_IF"] {
 		s = Structure{[]Structure{}, structureCode["ST_IF_ELSE_BLOCK"], "ST_IF_ELSE_BLOCK"}
 
@@ -342,6 +369,13 @@ func (p *Parser) statement() (Structure, error) {
 			return s, err
 		}
 		s.children = append(s.children, temp)
+		/*p.nextToken()
+
+		temp, err = p.checkToken("NEWLINE")
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)*/
 	} else if p.curToken.code == tokenCode["IDENTIFIER"] {
 		if p.peek().code == tokenCode["COLON"] {
 			s = Structure{[]Structure{}, structureCode["ST_DECLARATION"], "ST_DECLARATION"}
@@ -379,11 +413,7 @@ func (p *Parser) statement() (Structure, error) {
 			s.children = append(s.children, temp)
 			p.nextToken()
 
-			temp, err = p.checkTokenChoices([]string{
-				"L_BOOL",
-				"L_INT",
-				"L_STRING",
-			})
+			temp, err = p.expression()
 			if err != nil {
 				return s, err
 			}
@@ -408,9 +438,10 @@ func (p *Parser) block() (Structure, error) {
 		}
 		block.children = append(block.children, statement)
 
-		p.nextToken()
+		//p.nextToken()
 
-		if p.curToken.code == tokenCode["ANTI_COLON"] {
+		if p.peek().code == tokenCode["ANTI_COLON"] {
+			p.nextToken()
 			break
 		}
 
@@ -622,7 +653,7 @@ func (p *Parser) checkTokenChoices(tokenKeys []string) (Structure, error) {
 		errText += " or "
 	}
 	errText = errText[:len(errText)-4]
-	return Structure{}, errors.New("[Parse (checkToken)] Expected " + errText + ", got " + p.curToken.text)
+	return Structure{}, errors.New("[Parse (checkTokenChoices)] Expected " + errText + ", got " + p.curToken.text)
 }
 
 func (p *Parser) checkToken(tokenKey string) (Structure, error) {

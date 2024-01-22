@@ -147,6 +147,8 @@ func (l *Lexer) lex(input []byte) []Token {
 				token = Token{tokenCode["K_FROM"], word}
 			} else if word == "for" {
 				token = Token{tokenCode["K_FOR"], word}
+			} else if word == "while" {
+				token = Token{tokenCode["K_WHILE"], word}
 			} else if word == "in" {
 				token = Token{tokenCode["K_IN"], word}
 			} else if word == "if" {

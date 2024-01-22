@@ -17,6 +17,8 @@ var tokenCode map[string]int = map[string]int{
 	"K_IF":     4,
 	"K_ELIF":   5,
 	"K_ELSE":   6,
+	"K_CLASS":  7,
+	"K_WHILE":  8,
 
 	// In-Built Funcs
 	"IB_PRINT": 32,

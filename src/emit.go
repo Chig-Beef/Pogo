@@ -28,6 +28,21 @@ func (e *Emitter) emit(ast Structure) (string, error) {
 		return output, nil
 	}
 
+	if ast.code == structureCode["ST_WHILE"] {
+		output += "for "
+		temp, err := e.emit(ast.children[1])
+		if err != nil {
+			return output, err
+		}
+		output += temp
+		temp, err = e.emit(ast.children[4])
+		if err != nil {
+			return output, err
+		}
+		output += temp
+		return output, nil
+	}
+
 	// Own text
 	val, exists := translation[ast.code]
 	if !exists {
@@ -70,9 +85,10 @@ var translation map[int]string = map[int]string{
 	structureCode["ANTI_COLON"]: "}",
 
 	// Keywords
-	structureCode["K_IF"]:   "\nif",
-	structureCode["K_ELIF"]: "else if",
-	structureCode["K_ELSE"]: "else",
+	structureCode["K_IF"]:    "\nif",
+	structureCode["K_ELIF"]:  "else if",
+	structureCode["K_ELSE"]:  "else",
+	structureCode["K_WHILE"]: "\nfor",
 
 	// In-built functions
 	structureCode["IB_PRINT"]: "println",
