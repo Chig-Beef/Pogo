@@ -111,6 +111,20 @@ func (p *Parser) replaceIndents(input []Token) []Token {
 	return append(output, Token{tokenCode["NEWLINE"], "NEWLINE"})
 }
 
+func (p *Parser) checkImport(program Structure) (Structure, error) {
+	if program.children[0].code != structureCode["ST_IMPORT"] {
+		return program, errors.New("(Parse [checkImport]) Source should start by importing GoType")
+	}
+	if program.children[0].children[0].code != structureCode["K_FROM"] {
+		return program, errors.New("(Parse [checkImport]) Source should start with \"from GoType import *\"")
+	}
+	if program.children[0].children[1].text != "GoType" {
+		return program, errors.New("(Parse [checkImport]) Source should start with \"from GoType import *\"")
+	}
+	program.children = program.children[1:]
+	return program, nil
+}
+
 func (p *Parser) parse(input []Token) Structure {
 	if len(input) == 0 {
 		log.Fatal("[Parse (parse)] Missing input")
@@ -121,6 +135,11 @@ func (p *Parser) parse(input []Token) Structure {
 	p.curToken = p.source[p.curPos]
 
 	s, err := p.program()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	s, err = p.checkImport(s)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
