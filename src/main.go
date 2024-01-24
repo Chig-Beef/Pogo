@@ -55,6 +55,13 @@ func compile(input []byte) string {
 	//fmt.Println(ast)
 	//fmt.Println(ast.stringify())
 
+	// Analyze
+	analyzer := Analyzer{}
+	err := analyzer.analyze(ast, []Variable{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Optimize
 
 	// Emit

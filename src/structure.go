@@ -53,6 +53,7 @@ var structureCode map[string]int = map[string]int{
 	"ASSIGN":       49,
 	"UNDETERMINED": 50,
 	"COMMENT_ONE":  51,
+	"ACCESSOR":     52,
 
 	// Keywords
 	"K_IMPORT": 64,

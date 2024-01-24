@@ -52,6 +52,7 @@ var tokenCode map[string]int = map[string]int{
 	"ASSIGN":       140,
 	"UNDETERMINED": 141,
 	"COMMENT_ONE":  142,
+	"ACCESSOR":     143,
 
 	// Literals
 	"L_BOOL":   160,
