@@ -6,10 +6,11 @@ import (
 )
 
 type Parser struct {
-	curPos   int
-	curToken Token
-	source   []Token
-	markers  []int
+	curPos    int
+	curToken  Token
+	source    []Token
+	markers   []int
+	functions []Structure
 }
 
 func (p *Parser) setMarker() {
@@ -94,17 +95,7 @@ func (p *Parser) replaceIndents(input []Token) []Token {
 		output = append(output, input[i])
 	}
 
-	c_count := 0
-	ac_count := 0
-	for i := 0; i < len(output); i++ {
-		if output[i].code == tokenCode["COLON"] {
-			c_count++
-		} else if output[i].code == tokenCode["ANTI_COLON"] {
-			ac_count++
-		}
-	}
-
-	for i := 0; i < c_count-ac_count-1; i++ {
+	for i := 0; i < indents[len(indents)-1]; i++ {
 		output = append(output, Token{tokenCode["ANTI_COLON"], ":"})
 	}
 
@@ -369,13 +360,6 @@ func (p *Parser) statement() (Structure, error) {
 			return s, err
 		}
 		s.children = append(s.children, temp)
-		/*p.nextToken()
-
-		temp, err = p.checkToken("NEWLINE")
-		if err != nil {
-			return s, err
-		}
-		s.children = append(s.children, temp)*/
 	} else if p.curToken.code == tokenCode["IDENTIFIER"] {
 		if p.peek().code == tokenCode["COLON"] {
 			s = Structure{[]Structure{}, structureCode["ST_DECLARATION"], "ST_DECLARATION"}
@@ -418,11 +402,125 @@ func (p *Parser) statement() (Structure, error) {
 				return s, err
 			}
 			s.children = append(s.children, temp)
+		} else if p.peek().code == tokenCode["L_PAREN"] {
+			s = Structure{[]Structure{}, structureCode["ST_CALL"], ""}
+			s.children = append(s.children, Structure{[]Structure{}, structureCode["FUNC_NAME"], p.curToken.text})
+			p.nextToken()
+
+			temp, err := p.checkToken("L_PAREN")
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temp)
+			p.nextToken()
+
+			for p.curToken.code == tokenCode["IDENTIFIER"] {
+				temp, err := p.checkToken("IDENTIFIER")
+				if err != nil {
+					return s, err
+				}
+				s.children = append(s.children, temp)
+				p.nextToken()
+
+				temp, err = p.checkToken("SEP")
+				if err != nil {
+					break
+				}
+				s.children = append(s.children, temp)
+				p.nextToken()
+			}
+
+			temp, err = p.checkToken("R_PAREN")
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temp)
 		}
+	} else if p.curToken.code == tokenCode["K_DEF"] {
+		s = Structure{[]Structure{}, structureCode["ST_FUNCTION"], "ST_FUNCTION"}
+		s.children = append(s.children, Structure{[]Structure{}, structureCode["K_DEF"], "def"})
+		p.nextToken()
+
+		temp, err := p.checkToken("IDENTIFIER")
+		if err != nil {
+			return s, err
+		}
+		temp.code = structureCode["FUNC_NAME"]
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temp, err = p.checkToken("L_PAREN")
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
+
+		p.nextToken()
+
+		for p.curToken.code == tokenCode["IDENTIFIER"] {
+			temps, err := p.checkTokenRange([]string{
+				"IDENTIFIER",
+				"COLON",
+				"IDENTIFIER",
+			})
+			if err != nil {
+				return s, err
+			}
+			s.children = append(s.children, temps...)
+
+			temp, err = p.checkToken("SEP")
+			if err != nil {
+				break
+			}
+			s.children = append(s.children, temp)
+			p.nextToken()
+		}
+
+		temp, err = p.checkToken("R_PAREN")
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temps, err := p.checkTokenRange([]string{
+			"COLON",
+			"NEWLINE",
+		})
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temps[0])
+
+		temp, err = p.block()
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
+
+		p.functions = append(p.functions, s)
+
+		return Structure{[]Structure{}, structureCode["NEWLINE"], "\n"}, nil
+
+	} else if p.curToken.code == tokenCode["K_RETURN"] {
+		s = Structure{[]Structure{}, structureCode["ST_RETURN"], ""}
+		s.children = append(s.children, Structure{[]Structure{}, structureCode["K_RETURN"], "return"})
+		p.nextToken()
+
+		temp, err := p.checkTokenChoices([]string{
+			"IDENTIFIER",
+			"L_BOOL",
+			"L_INT",
+			"L_STRING",
+		})
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temp)
 	}
 
 	if len(s.children) == 0 {
-		s = Structure{[]Structure{}, structureCode["ILLEGAL"], "ILLEGAL"}
+		s = Structure{[]Structure{}, structureCode["ILLEGAL"], "ILLEGAL + " + p.curToken.text}
 	}
 
 	return s, nil

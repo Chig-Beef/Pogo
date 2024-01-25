@@ -157,6 +157,10 @@ func (l *Lexer) lex(input []byte) []Token {
 				token = Token{tokenCode["K_ELIF"], word}
 			} else if word == "else" {
 				token = Token{tokenCode["K_ELSE"], word}
+			} else if word == "def" {
+				token = Token{tokenCode["K_DEF"], word}
+			} else if word == "return" {
+				token = Token{tokenCode["K_RETURN"], word}
 			}
 
 			// In-Built Funcs

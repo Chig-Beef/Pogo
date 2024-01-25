@@ -19,6 +19,8 @@ var tokenCode map[string]int = map[string]int{
 	"K_ELSE":   6,
 	"K_CLASS":  7,
 	"K_WHILE":  8,
+	"K_DEF":    9,
+	"K_RETURN": 10,
 
 	// In-Built Funcs
 	"IB_PRINT": 32,
@@ -53,6 +55,7 @@ var tokenCode map[string]int = map[string]int{
 	"UNDETERMINED": 141,
 	"COMMENT_ONE":  142,
 	"ACCESSOR":     143,
+	"FUNC_NAME":    144,
 
 	// Literals
 	"L_BOOL":   160,

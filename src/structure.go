@@ -31,6 +31,8 @@ var structureCode map[string]int = map[string]int{
 	"ST_DECLARATION":  7,
 	"ST_MANIPULATION": 8,
 	"ST_CALL":         9,
+	"ST_FUNCTION":     10,
+	"ST_RETURN":       11,
 
 	// Other
 	"BLOCK":        32,
@@ -54,6 +56,7 @@ var structureCode map[string]int = map[string]int{
 	"UNDETERMINED": 50,
 	"COMMENT_ONE":  51,
 	"ACCESSOR":     52,
+	"FUNC_NAME":    53,
 
 	// Keywords
 	"K_IMPORT": 64,
@@ -65,6 +68,8 @@ var structureCode map[string]int = map[string]int{
 	"K_ELSE":   70,
 	"K_CLASS":  71,
 	"K_WHILE":  72,
+	"K_DEF":    73,
+	"K_RETURN": 74,
 
 	// In-built functions
 	"IB_PRINT": 96,

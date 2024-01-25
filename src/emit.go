@@ -87,8 +87,8 @@ var translation map[int]string = map[int]string{
 	// Keywords
 	structureCode["K_IF"]:    "\nif",
 	structureCode["K_ELIF"]:  "else if",
-	structureCode["K_ELSE"]:  "else",
 	structureCode["K_WHILE"]: "\nfor",
+	structureCode["K_DEF"]:   "\nfunc",
 
 	// In-built functions
 	structureCode["IB_PRINT"]: "println",
@@ -111,9 +111,11 @@ var directs []int = []int{
 	structureCode["SEP"],
 	structureCode["ASSIGN"],
 	structureCode["COMMENT_ONE"],
+	structureCode["FUNC_NAME"],
 
 	// Keywords
-	structureCode["K_FOR"],
+	structureCode["K_ELSE"],
+	structureCode["K_RETURN"],
 
 	// Math operands
 	structureCode["MO_PLUS"],

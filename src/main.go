@@ -55,6 +55,23 @@ func compile(input []byte) string {
 	//fmt.Println(ast)
 	//fmt.Println(ast.stringify())
 
+	main_func := Structure{
+		[]Structure{
+			{[]Structure{}, structureCode["K_DEF"], "def"},
+			{[]Structure{}, structureCode["FUNC_NAME"], "main"},
+			{[]Structure{}, structureCode["L_PAREN"], "("},
+			{[]Structure{}, structureCode["R_PAREN"], ")"},
+			{[]Structure{}, structureCode["COLON"], ":"},
+			{append(ast.children, Structure{[]Structure{}, structureCode["ANTI_COLON"], ":"}), structureCode["BLOCK"], ""},
+		},
+		structureCode["ST_FUNCTION"],
+		"ST_FUNCTION",
+	}
+	ast.children = []Structure{main_func}
+	ast.children = append(ast.children, parser.functions...)
+
+	fmt.Println(ast.stringify())
+
 	// Analyze
 	analyzer := Analyzer{}
 	err := analyzer.analyze(ast, []Variable{})
@@ -72,5 +89,5 @@ func compile(input []byte) string {
 	}
 	// Final code
 	//fmt.Println(emitSource)
-	return "package main\nfunc main() {\n" + emitSource + "}"
+	return "package main\n" + emitSource
 }
