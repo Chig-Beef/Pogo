@@ -56,17 +56,19 @@ func compile(input []byte) string {
 	//fmt.Println(ast.stringify())
 
 	main_func := Structure{
-		[]Structure{
-			{[]Structure{}, structureCode["K_DEF"], "def"},
-			{[]Structure{}, structureCode["FUNC_NAME"], "main"},
-			{[]Structure{}, structureCode["L_PAREN"], "("},
-			{[]Structure{}, structureCode["R_PAREN"], ")"},
-			{[]Structure{}, structureCode["COLON"], ":"},
-			{append(ast.children, Structure{[]Structure{}, structureCode["ANTI_COLON"], ":"}), structureCode["BLOCK"], ""},
-		},
 		structureCode["ST_FUNCTION"],
 		"ST_FUNCTION",
+		-1,
+		[]Structure{
+			createStructure("K_DEF", "def", -1),
+			createStructure("FUNC_NAME", "main", -1),
+			createStructure("L_PAREN", "(", -1),
+			createStructure("R_PAREN", ")", -1),
+			createStructure("COLON", ":", -1),
+			{structureCode["BLOCK"], "", -1, append(ast.children, createStructure("ANTI_COLON", ":", -1))},
+		},
 	}
+
 	ast.children = []Structure{main_func}
 	ast.children = append(ast.children, parser.functions...)
 

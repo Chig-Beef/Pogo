@@ -3,6 +3,7 @@ package main
 type Token struct {
 	code int
 	text string
+	line int
 }
 
 var tokenCode map[string]int = map[string]int{

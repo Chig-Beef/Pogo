@@ -3,9 +3,19 @@ package main
 import "strings"
 
 type Structure struct {
-	children []Structure
 	code     int
 	text     string
+	line     int
+	children []Structure
+}
+
+func createStructure(code, text string, line int) Structure {
+	return Structure{
+		structureCode[code],
+		text,
+		line,
+		[]Structure{},
+	}
 }
 
 func (st Structure) stringify() string {
