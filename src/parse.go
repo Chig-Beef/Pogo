@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"log"
-	"strconv"
 )
 
 type Parser struct {
@@ -12,6 +11,7 @@ type Parser struct {
 	source    []Token
 	markers   []int
 	functions []Structure
+	funcLine  []string
 }
 
 func (p *Parser) setMarker() {
@@ -118,8 +118,10 @@ func (p *Parser) checkImport(program Structure) (Structure, error) {
 }
 
 func (p *Parser) parse(input []Token) Structure {
+	p.funcLine = []string{"parse.go", "parse"}
+
 	if len(input) == 0 {
-		log.Fatal("[Parse (parse)] Missing input")
+		log.Fatal(createError(p.funcLine, "Missing input", 0))
 	}
 
 	p.source = input
@@ -140,6 +142,7 @@ func (p *Parser) parse(input []Token) Structure {
 }
 
 func (p *Parser) program() (Structure, error) {
+	p.funcLine = append(p.funcLine, "program")
 	program := createStructure("PROGRAM", "PROGRAM", 0)
 
 	for p.curPos < len(p.source) {
@@ -153,10 +156,13 @@ func (p *Parser) program() (Structure, error) {
 
 	}
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
+
 	return program, nil
 }
 
 func (p *Parser) statement() (Structure, error) {
+	p.funcLine = append(p.funcLine, "statement")
 	var s Structure
 
 	if p.curToken.code == tokenCode["K_IMPORT"] {
@@ -192,7 +198,7 @@ func (p *Parser) statement() (Structure, error) {
 			s.children = append(s.children, temp)
 		} else {
 			if p.curToken.text != "*" {
-				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
+				return s, createError(p.funcLine, "Expected ASTERISK, got "+p.curToken.text, p.curToken.line)
 			}
 			temp.code = structureCode["ASTERISK"]
 		}
@@ -200,14 +206,14 @@ func (p *Parser) statement() (Structure, error) {
 
 		if p.curToken.code != tokenCode["UNDETERMINED"] {
 			if p.curToken.code != tokenCode["IDENTIFIER"] {
-				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
+				return s, createError(p.funcLine, "Expected ASTERISK, got "+p.curToken.text, p.curToken.line)
 			}
 			s.children = append(s.children, createStructure("IDENTIFIER", p.curToken.text, p.curToken.line))
 		} else {
 			if p.curToken.text == "*" {
 				s.children = append(s.children, createStructure("ASTERISK", p.curToken.text, p.curToken.line))
 			} else {
-				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
+				return s, createError(p.funcLine, "Expected ASTERISK, got"+p.curToken.text, p.curToken.line)
 			}
 		}
 	} else if p.curToken.code == tokenCode["COMMENT_ONE"] {
@@ -501,6 +507,7 @@ func (p *Parser) statement() (Structure, error) {
 
 		p.functions = append(p.functions, s)
 
+		p.funcLine = p.funcLine[:len(p.funcLine)-1]
 		return createStructure("NEWLINE", "\n", p.curToken.line), nil
 
 	} else if p.curToken.code == tokenCode["K_RETURN"] {
@@ -524,10 +531,12 @@ func (p *Parser) statement() (Structure, error) {
 		s = createStructure("ILLEGAL", "ILLEGAL + "+p.curToken.text, p.curToken.line)
 	}
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return s, nil
 }
 
 func (p *Parser) block() (Structure, error) {
+	p.funcLine = append(p.funcLine, "block")
 	block := createStructure("BLOCK", "BLOCK", p.curToken.line)
 
 	for p.curPos < len(p.source) {
@@ -550,10 +559,12 @@ func (p *Parser) block() (Structure, error) {
 
 	block.children = append(block.children, createStructure("ANTI_COLON", ":", p.curToken.line))
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return block, nil
 }
 
 func (p *Parser) s_if() (Structure, error) {
+	p.funcLine = append(p.funcLine, "s_if")
 	s := createStructure("ST_IF", "ST_IF", p.curToken.line)
 
 	temp, err := p.checkToken("K_IF")
@@ -585,10 +596,12 @@ func (p *Parser) s_if() (Structure, error) {
 	}
 	s.children = append(s.children, temp)
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return s, nil
 }
 
 func (p *Parser) s_elif() (Structure, error) {
+	p.funcLine = append(p.funcLine, "s_elif")
 	s := createStructure("ST_ELIF", "ST_ELIF", p.curToken.line)
 
 	temp, err := p.checkToken("K_ELIF")
@@ -620,10 +633,12 @@ func (p *Parser) s_elif() (Structure, error) {
 	}
 	s.children = append(s.children, temp)
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return s, nil
 }
 
 func (p *Parser) s_else() (Structure, error) {
+	p.funcLine = append(p.funcLine, "s_else")
 	s := createStructure("ST_ELSE", "ST_ELSE", p.curToken.line)
 
 	temp, err := p.checkToken("K_ELSE")
@@ -648,10 +663,12 @@ func (p *Parser) s_else() (Structure, error) {
 	}
 	s.children = append(s.children, temp)
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return s, nil
 }
 
 func (p *Parser) expression() (Structure, error) {
+	p.funcLine = append(p.funcLine, "expression")
 	s := createStructure("EXPRESSION", "EXPRESSION", p.curToken.line)
 
 	temp, err := p.checkTokenChoices([]string{
@@ -675,6 +692,7 @@ func (p *Parser) expression() (Structure, error) {
 	})
 	if err != nil {
 		p.rollBack()
+		p.funcLine = p.funcLine[:len(p.funcLine)-1]
 		return s, nil // Could be a single literal, so we don't error
 	}
 	s.children = append(s.children, temp)
@@ -691,10 +709,12 @@ func (p *Parser) expression() (Structure, error) {
 	}
 	s.children = append(s.children, temp)
 
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return s, nil
 }
 
 func (p *Parser) comparison() (Structure, error) {
+	p.funcLine = append(p.funcLine, "comparison")
 	s := createStructure("COMPARISON", "COMPARISON", p.curToken.line)
 
 	temp, err := p.expression()
@@ -728,6 +748,7 @@ func (p *Parser) comparison() (Structure, error) {
 }
 
 func (p *Parser) checkTokenRange(tokenKeys []string) ([]Structure, error) {
+	p.funcLine = append(p.funcLine, "checkTokenRange")
 	structures := []Structure{}
 	for i := 0; i < len(tokenKeys); i++ {
 		temp, err := p.checkToken(tokenKeys[i])
@@ -737,12 +758,15 @@ func (p *Parser) checkTokenRange(tokenKeys []string) ([]Structure, error) {
 		structures = append(structures, temp)
 		p.nextToken()
 	}
+	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return structures, nil
 }
 
 func (p *Parser) checkTokenChoices(tokenKeys []string) (Structure, error) {
+	p.funcLine = append(p.funcLine, "checkTokenChoices")
 	for i := 0; i < len(tokenKeys); i++ {
 		if p.curToken.code == tokenCode[tokenKeys[i]] {
+			p.funcLine = p.funcLine[:len(p.funcLine)-1]
 			return createStructure(tokenKeys[i], p.curToken.text, p.curToken.line), nil
 		}
 	}
@@ -752,12 +776,14 @@ func (p *Parser) checkTokenChoices(tokenKeys []string) (Structure, error) {
 		errText += " or "
 	}
 	errText = errText[:len(errText)-4]
-	return Structure{}, errors.New("[Parse (checkTokenChoices)] Expected " + errText + ", got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
+	return Structure{}, createError(p.funcLine, "Expected "+errText+", got "+p.curToken.text, p.curToken.line)
 }
 
 func (p *Parser) checkToken(tokenKey string) (Structure, error) {
+	p.funcLine = append(p.funcLine, "checkToken")
 	if p.curToken.code == tokenCode[tokenKey] {
+		p.funcLine = p.funcLine[:len(p.funcLine)-1]
 		return createStructure(tokenKey, p.curToken.text, p.curToken.line), nil
 	}
-	return Structure{}, errors.New("[Parse (checkToken)] Expected " + tokenKey + ", got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
+	return Structure{}, createError(p.funcLine, "Expected "+tokenKey+", got "+p.curToken.text, p.curToken.line)
 }

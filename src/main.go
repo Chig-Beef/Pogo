@@ -72,7 +72,7 @@ func compile(input []byte) string {
 	ast.children = []Structure{main_func}
 	ast.children = append(ast.children, parser.functions...)
 
-	fmt.Println(ast.stringify())
+	//fmt.Println(ast.stringify())
 
 	// Analyze
 	analyzer := Analyzer{}

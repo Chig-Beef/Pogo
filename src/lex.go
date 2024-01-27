@@ -47,7 +47,7 @@ func (l *Lexer) lex(input []byte) []Token {
 	l.source = input
 	l.curPos = 0
 	l.curChar = l.source[l.curPos]
-	l.line = 0
+	l.line = 1
 
 	tokens := []Token{}
 
@@ -86,6 +86,7 @@ func (l *Lexer) lex(input []byte) []Token {
 		if l.curChar == '\r' && l.peek() == '\n' {
 			token = Token{tokenCode["NEWLINE"], "NEWLINE", l.line}
 			l.nextChar()
+			l.line++
 		} else if l.curChar == ',' {
 			token = Token{tokenCode["SEP"], ",", l.line}
 		} else if l.curChar == ':' {
@@ -94,7 +95,6 @@ func (l *Lexer) lex(input []byte) []Token {
 			start := l.curPos
 			for l.peek() != '\r' && l.peek() != '\n' {
 				l.nextChar()
-				l.line++
 			}
 			note := string(l.source[start : l.curPos+1])
 			token = Token{tokenCode["COMMENT_ONE"], note, l.line}
