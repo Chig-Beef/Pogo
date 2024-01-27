@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ type Emitter struct {
 func (e *Emitter) emit(ast Structure) (string, error) {
 	output := ""
 	if ast.code == structureCode["ILLEGAL"] {
-		return output, errors.New("[Emit (emit)] ILLEGAL structure found in final code")
+		return output, errors.New("[Emit (emit)] ILLEGAL structure found in final code" + " on line " + strconv.Itoa(ast.line))
 	}
 
 	// Override for loops

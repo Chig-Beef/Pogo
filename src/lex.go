@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strconv"
 	"unicode"
 )
 
@@ -213,7 +214,7 @@ func (l *Lexer) lex(input []byte) []Token {
 			num := string(l.source[start : l.curPos+1])
 
 			if num[len(num)-1] == '_' || num[len(num)-1] == '.' {
-				log.Fatal("[Lex (lex)] Numbers must end with a digit")
+				log.Fatal("[Lex (lex)] Numbers must end with a digit on line " + strconv.Itoa(l.line))
 				return tokens
 			}
 

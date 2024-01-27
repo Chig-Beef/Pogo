@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"strconv"
 )
 
 type Parser struct {
@@ -104,7 +105,7 @@ func (p *Parser) replaceIndents(input []Token) []Token {
 
 func (p *Parser) checkImport(program Structure) (Structure, error) {
 	if program.children[0].code != structureCode["ST_IMPORT"] {
-		return program, errors.New("(Parse [checkImport]) Source should start by importing GoType")
+		return program, errors.New("(Parse [checkImport]) Source should start with \"from GoType import *\"")
 	}
 	if program.children[0].children[0].code != structureCode["K_FROM"] {
 		return program, errors.New("(Parse [checkImport]) Source should start with \"from GoType import *\"")
@@ -191,7 +192,7 @@ func (p *Parser) statement() (Structure, error) {
 			s.children = append(s.children, temp)
 		} else {
 			if p.curToken.text != "*" {
-				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text)
+				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
 			}
 			temp.code = structureCode["ASTERISK"]
 		}
@@ -199,14 +200,14 @@ func (p *Parser) statement() (Structure, error) {
 
 		if p.curToken.code != tokenCode["UNDETERMINED"] {
 			if p.curToken.code != tokenCode["IDENTIFIER"] {
-				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text)
+				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
 			}
 			s.children = append(s.children, createStructure("IDENTIFIER", p.curToken.text, p.curToken.line))
 		} else {
 			if p.curToken.text == "*" {
 				s.children = append(s.children, createStructure("ASTERISK", p.curToken.text, p.curToken.line))
 			} else {
-				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text)
+				return s, errors.New("[Parse (parse-ST_IMPORT)] Expected ASTERISK, got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
 			}
 		}
 	} else if p.curToken.code == tokenCode["COMMENT_ONE"] {
@@ -751,12 +752,12 @@ func (p *Parser) checkTokenChoices(tokenKeys []string) (Structure, error) {
 		errText += " or "
 	}
 	errText = errText[:len(errText)-4]
-	return Structure{}, errors.New("[Parse (checkTokenChoices)] Expected " + errText + ", got " + p.curToken.text)
+	return Structure{}, errors.New("[Parse (checkTokenChoices)] Expected " + errText + ", got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
 }
 
 func (p *Parser) checkToken(tokenKey string) (Structure, error) {
 	if p.curToken.code == tokenCode[tokenKey] {
 		return createStructure(tokenKey, p.curToken.text, p.curToken.line), nil
 	}
-	return Structure{}, errors.New("[Parse (checkToken)] Expected " + tokenKey + ", got " + p.curToken.text)
+	return Structure{}, errors.New("[Parse (checkToken)] Expected " + tokenKey + ", got " + p.curToken.text + " on line " + strconv.Itoa(p.curToken.line))
 }
