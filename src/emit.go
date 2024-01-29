@@ -112,6 +112,7 @@ var directs []int = []int{
 	structureCode["SEP"],
 	structureCode["ASSIGN"],
 	structureCode["COMMENT_ONE"],
+	structureCode["COMMENT_MULTI"],
 	structureCode["FUNC_NAME"],
 
 	// Keywords

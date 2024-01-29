@@ -46,10 +46,12 @@ func (p *Parser) nextTokenNoNotes() []Structure {
 	p.nextToken()
 	sts := []Structure{}
 
-	for p.curToken.code == tokenCode["COMMENT_ONE"] || p.curToken.code == tokenCode["NEWLINE"] {
+	for p.curToken.code == tokenCode["COMMENT_ONE"] || p.curToken.code == tokenCode["COMMENT_MULTI"] || p.curToken.code == tokenCode["NEWLINE"] {
 		sc := structureCode["COMMENT_ONE"]
 		if p.curToken.code == tokenCode["NEWLINE"] {
 			sc = structureCode["NEWLINE"]
+		} else if p.curToken.code == tokenCode["COMMENT_MULTI"] {
+			sc = structureCode["COMMENT_MULTI"]
 		}
 		sts = append(sts, Structure{sc, p.curToken.text, p.curToken.line, []Structure{}})
 		p.nextToken()
@@ -218,6 +220,9 @@ func (p *Parser) statement() (Structure, error) {
 		}
 	} else if p.curToken.code == tokenCode["COMMENT_ONE"] {
 		s = createStructure("COMMENT_ONE", p.curToken.text, p.curToken.line)
+	} else if p.curToken.code == tokenCode["COMMENT_MULTI"] {
+		s = createStructure("COMMENT_MULTI", p.curToken.text, p.curToken.line)
+		s.children = append(s.children, createStructure("NEWLINE", "NEWLINE", p.curToken.line))
 	} else if p.curToken.code == tokenCode["K_FOR"] {
 		s = createStructure("ST_FOR", "ST_FOR", p.curToken.line)
 
@@ -785,7 +790,9 @@ func (p *Parser) comparison() (Structure, error) {
 		"CO_LT_EQUALS",
 	})
 	if err != nil {
-		return s, err
+		p.rollBack()
+		p.funcLine = p.funcLine[:len(p.funcLine)-1]
+		return s, nil // Could be a single literal, so we don't error
 	}
 	s.children = append(s.children, temp)
 	p.nextToken()

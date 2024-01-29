@@ -103,8 +103,20 @@ func (l *Lexer) lex(input []byte) []Token {
 			for l.peek() != '\r' && l.peek() != '\n' {
 				l.nextChar()
 			}
-			note := string(l.source[start : l.curPos+1])
+			note := string(append([]byte{'/', '/'}, l.source[start+1:l.curPos+1]...))
 			token = Token{tokenCode["COMMENT_ONE"], note, l.line}
+		} else if l.curChar == '\'' {
+			if string(l.source[l.curPos:l.curPos+3]) == "'''" {
+				start := l.curPos
+				l.nextChar()
+				for string(l.source[l.curPos:l.curPos+3]) != "'''" {
+					l.nextChar()
+				}
+				l.nextChar()
+				l.nextChar()
+				note := "/*" + string(l.source[start+3:l.curPos-2]) + "*/"
+				token = Token{tokenCode["COMMENT_MULTI"], note, l.line}
+			}
 		} else if l.curChar == ' ' {
 			if string(l.source[l.curPos:l.curPos+4]) == "    " {
 				token = Token{tokenCode["INDENT"], "    ", l.line}
@@ -228,6 +240,23 @@ func (l *Lexer) lex(input []byte) []Token {
 			if num[len(num)-1] == '_' || num[len(num)-1] == '.' {
 				log.Fatal("[Lex (lex)] Numbers must end with a digit on line " + strconv.Itoa(l.line))
 				return tokens
+			}
+
+			dot_index := -1
+
+			has_dot := false
+			for i := 0; i < len(num); i++ {
+				if num[i] == '.' {
+					dot_index = i
+					if has_dot {
+						log.Fatal("[Lex (lex)] Numbers can only have one dot on line " + strconv.Itoa(l.line))
+					}
+					has_dot = true
+				}
+			}
+
+			if num[dot_index-1] == '_' || num[dot_index+1] == '_' {
+				log.Fatal("[Lex (lex)] Cannot place underscores next to dots in numbers on " + strconv.Itoa(l.line))
 			}
 
 			token = Token{tokenCode["L_INT"], num, l.line}
