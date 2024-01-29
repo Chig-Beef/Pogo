@@ -57,11 +57,13 @@ var tokenCode map[string]int = map[string]int{
 	"COMMENT_ONE":  142,
 	"ACCESSOR":     143,
 	"FUNC_NAME":    144,
+	"ARROW":        145,
 
 	// Literals
 	"L_BOOL":   160,
 	"L_INT":    161,
 	"L_STRING": 162,
+	"L_NULL":   163,
 
 	// Comparison Operands
 	"CO_EQUALS":     192,

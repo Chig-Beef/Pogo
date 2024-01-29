@@ -58,7 +58,14 @@ func (l *Lexer) lex(input []byte) []Token {
 		if l.curChar == '+' {
 			token = Token{tokenCode["MO_PLUS"], "+", l.line}
 		} else if l.curChar == '-' {
-			token = Token{tokenCode["MO_SUN"], "-", l.line}
+			if l.peek() == '>' {
+				l.nextChar()
+				token = Token{tokenCode["ARROW"], "->", l.line}
+				tokens = append(tokens, token)
+				continue
+			} else {
+				token = Token{tokenCode["MO_SUB"], "-", l.line}
+			}
 		} else if l.curChar == '*' {
 			token = Token{tokenCode["UNDETERMINED"], "*", l.line} // Could be for import
 		} else if l.curChar == '/' {
@@ -181,6 +188,11 @@ func (l *Lexer) lex(input []byte) []Token {
 				token = Token{tokenCode["BO_AND"], word, l.line}
 			} else if word == "or" {
 				token = Token{tokenCode["BO_OR"], word, l.line}
+			}
+
+			// Null
+			if word == "None" {
+				token = Token{tokenCode["L_NULL"], word, l.line}
 			}
 
 			// Boolean literal

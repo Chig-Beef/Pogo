@@ -9,8 +9,9 @@ type Variable struct {
 }
 
 type Function struct {
-	name   string
-	params []string
+	name    string
+	params  []string
+	varType string
 }
 
 func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error {
@@ -87,7 +88,7 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 		i := 2
 		pIndex := 0
 
-		for i < len(s.children) {
+		for i+1 < len(s.children) {
 			if s.children[i].code != structureCode["IDENTIFIER"] {
 				switch s.children[i].code {
 				case structureCode["L_STRING"]:
@@ -110,8 +111,29 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 					if !valid {
 						return createError([]string{"analyze.go", "analyze:ST_CALL"}, "Excpected "+fn.params[pIndex]+" got int in function call", s.line)
 					}
+				case structureCode["ST_CALL"]:
+					var insideCall Function
+
+					name := s.children[i].children[0].text
+					var valid bool
+					for i := 0; i < len(funcs); i++ {
+						valid = false
+						if name == funcs[i].name {
+							valid = true
+							insideCall = funcs[i]
+							break
+						}
+					}
+					if !valid {
+						return createError([]string{"analyze.go", "analyze:ST_CALL"}, "An attempt to call the non-existent function \""+name+"\" was made", s.line)
+					}
+
+					if fn.params[pIndex] != insideCall.varType {
+						return createError([]string{"analyze.go", "analyze:ST_CALL"}, "\""+name+"\" is the wrong type, expected "+fn.params[pIndex]+" got "+insideCall.varType, s.line)
+					}
+
 				default:
-					return createError([]string{"analyze.go", "analyze:ST_CALL"}, "How did you even...?", s.line)
+					return createError([]string{"analyze.go", "analyze:ST_CALL"}, "How did you even...? "+fn.name, s.line)
 				}
 				i += 2
 				pIndex++
@@ -175,10 +197,12 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 				t := s.children[i].children[j+2] // IDENTIFIER - type
 				params = append(params, t.text)  // Add the type to the parameters of the function
 
-				j += 4 // Next variable, otherwise this will end up on an anti-colon
+				j += 4 // Next variable, otherwise this will end up on an arrow
 			}
 
-			f := Function{n.text, params}
+			t := s.children[i].children[len(s.children[i].children)-3]
+
+			f := Function{n.text, params, t.text}
 			funcs = append(funcs, f)
 		}
 	}

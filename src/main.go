@@ -76,7 +76,7 @@ func compile(input []byte) string {
 
 	// Analyze
 	analyzer := Analyzer{}
-	err := analyzer.analyze(ast, []Variable{}, []Function{{"print", []string{"any"}}})
+	err := analyzer.analyze(ast, []Variable{}, []Function{{"print", []string{"any"}, "None"}})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -383,13 +383,18 @@ func (p *Parser) statement() (Structure, error) {
 			}
 			s.children = append(s.children, temps...)
 
-			temp, err := p.checkTokenChoices([]string{
-				"L_BOOL",
-				"L_INT",
-				"L_STRING",
-			})
+			p.setMarker()
+			temp, err := p.call()
 			if err != nil {
-				return s, err
+				p.gotoMarker()
+				temp, err = p.checkTokenChoices([]string{
+					"L_BOOL",
+					"L_INT",
+					"L_STRING",
+				})
+				if err != nil {
+					return s, err
+				}
 			}
 			s.children = append(s.children, temp)
 		} else if p.peek().code == tokenCode["ASSIGN"] {
@@ -410,48 +415,11 @@ func (p *Parser) statement() (Structure, error) {
 			}
 			s.children = append(s.children, temp)
 		} else if p.peek().code == tokenCode["L_PAREN"] {
-			s = createStructure("ST_CALL", "ST_CALL", p.curToken.line)
-			s.children = append(s.children, createStructure("FUNC_NAME", p.curToken.text, p.curToken.line))
-			p.nextToken()
-
-			temp, err := p.checkToken("L_PAREN")
+			temp, err := p.call()
 			if err != nil {
 				return s, err
 			}
-			s.children = append(s.children, temp)
-			p.nextToken()
-
-			temp, err = p.checkTokenChoices([]string{
-				"IDENTIFIER",
-				"L_BOOL",
-				"L_INT",
-				"L_STRING",
-			})
-
-			for err == nil {
-				s.children = append(s.children, temp)
-				p.nextToken()
-
-				temp, err = p.checkToken("SEP")
-				if err != nil {
-					break
-				}
-				s.children = append(s.children, temp)
-				p.nextToken()
-
-				temp, err = p.checkTokenChoices([]string{
-					"IDENTIFIER",
-					"L_BOOL",
-					"L_INT",
-					"L_STRING",
-				})
-			}
-
-			temp, err = p.checkToken("R_PAREN")
-			if err != nil {
-				return s, err
-			}
-			s.children = append(s.children, temp)
+			s = temp
 		}
 	} else if p.curToken.code == tokenCode["K_DEF"] {
 		s = createStructure("ST_FUNCTION", "ST_FUNCTION", p.curToken.line)
@@ -493,14 +461,27 @@ func (p *Parser) statement() (Structure, error) {
 			p.nextToken()
 		}
 
-		temp, err = p.checkToken("R_PAREN")
+		temps, err := p.checkTokenRange([]string{
+			"R_PAREN",
+			"ARROW",
+		})
+		if err != nil {
+			return s, err
+		}
+		s.children = append(s.children, temps...)
+		p.nextToken()
+
+		temp, err = p.checkTokenChoices([]string{
+			"IDENTIFIER",
+			"L_NULL",
+		})
 		if err != nil {
 			return s, err
 		}
 		s.children = append(s.children, temp)
 		p.nextToken()
 
-		temps, err := p.checkTokenRange([]string{
+		temps, err = p.checkTokenRange([]string{
 			"COLON",
 			"NEWLINE",
 		})
@@ -519,7 +500,6 @@ func (p *Parser) statement() (Structure, error) {
 
 		p.funcLine = p.funcLine[:len(p.funcLine)-1]
 		return createStructure("NEWLINE", "NEWLINE", p.curToken.line), nil
-
 	} else if p.curToken.code == tokenCode["K_RETURN"] {
 		s = createStructure("ST_RETURN", "ST_RETURN", p.curToken.line)
 		s.children = append(s.children, createStructure("K_RETURN", p.curToken.text, p.curToken.line))
@@ -571,6 +551,68 @@ func (p *Parser) block() (Structure, error) {
 
 	p.funcLine = p.funcLine[:len(p.funcLine)-1]
 	return block, nil
+}
+
+func (p *Parser) call() (Structure, error) {
+	var err error
+
+	s := createStructure("ST_CALL", "ST_CALL", p.curToken.line)
+
+	temp, err := p.checkToken("IDENTIFIER")
+	if err != nil {
+		return s, err
+	}
+	temp.code = structureCode["FUNC_NAME"]
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temp, err = p.checkToken("L_PAREN")
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+	p.nextToken()
+
+	temp, err = p.checkTokenChoices([]string{
+		"IDENTIFIER",
+		"L_BOOL",
+		"L_INT",
+		"L_STRING",
+	})
+
+	for err == nil {
+		if p.peek().code == tokenCode["L_PAREN"] { // We're dealing with a call
+			temp, err = p.call()
+			if err != nil {
+				return s, err
+			}
+		}
+
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temp, err = p.checkToken("SEP")
+		if err != nil {
+			break
+		}
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temp, err = p.checkTokenChoices([]string{
+			"IDENTIFIER",
+			"L_BOOL",
+			"L_INT",
+			"L_STRING",
+		})
+	}
+
+	temp, err = p.checkToken("R_PAREN")
+	if err != nil {
+		return s, err
+	}
+	s.children = append(s.children, temp)
+
+	return s, nil
 }
 
 func (p *Parser) s_if() (Structure, error) {

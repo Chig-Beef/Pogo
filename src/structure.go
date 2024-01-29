@@ -67,6 +67,7 @@ var structureCode map[string]int = map[string]int{
 	"COMMENT_ONE":  51,
 	"ACCESSOR":     52,
 	"FUNC_NAME":    53,
+	"ARROW":        54,
 
 	// Keywords
 	"K_IMPORT": 64,
@@ -101,6 +102,7 @@ var structureCode map[string]int = map[string]int{
 	"L_BOOL":   192,
 	"L_INT":    193,
 	"L_STRING": 194,
+	"L_NULL":   195,
 
 	// Comparison operands
 	"CO_EQUALS":     224,
