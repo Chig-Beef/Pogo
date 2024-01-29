@@ -421,11 +421,14 @@ func (p *Parser) statement() (Structure, error) {
 			s.children = append(s.children, temp)
 			p.nextToken()
 
-			for p.curToken.code == tokenCode["IDENTIFIER"] {
-				temp, err := p.checkToken("IDENTIFIER")
-				if err != nil {
-					return s, err
-				}
+			temp, err = p.checkTokenChoices([]string{
+				"IDENTIFIER",
+				"L_BOOL",
+				"L_INT",
+				"L_STRING",
+			})
+
+			for err == nil {
 				s.children = append(s.children, temp)
 				p.nextToken()
 
@@ -435,6 +438,13 @@ func (p *Parser) statement() (Structure, error) {
 				}
 				s.children = append(s.children, temp)
 				p.nextToken()
+
+				temp, err = p.checkTokenChoices([]string{
+					"IDENTIFIER",
+					"L_BOOL",
+					"L_INT",
+					"L_STRING",
+				})
 			}
 
 			temp, err = p.checkToken("R_PAREN")
@@ -508,7 +518,7 @@ func (p *Parser) statement() (Structure, error) {
 		p.functions = append(p.functions, s)
 
 		p.funcLine = p.funcLine[:len(p.funcLine)-1]
-		return createStructure("NEWLINE", "\n", p.curToken.line), nil
+		return createStructure("NEWLINE", "NEWLINE", p.curToken.line), nil
 
 	} else if p.curToken.code == tokenCode["K_RETURN"] {
 		s = createStructure("ST_RETURN", "ST_RETURN", p.curToken.line)

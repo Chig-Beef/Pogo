@@ -70,13 +70,13 @@ func compile(input []byte) string {
 	}
 
 	ast.children = []Structure{main_func}
-	ast.children = append(ast.children, parser.functions...)
+	ast.children = append(parser.functions, ast.children...)
 
 	//fmt.Println(ast.stringify())
 
 	// Analyze
 	analyzer := Analyzer{}
-	err := analyzer.analyze(ast, []Variable{})
+	err := analyzer.analyze(ast, []Variable{}, []Function{{"print", []string{"any"}}})
 	if err != nil {
 		log.Fatal(err)
 	}
