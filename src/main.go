@@ -53,7 +53,7 @@ func compile(input []byte) string {
 	//fmt.Println(pS)
 	ast := parser.parse(pS)
 	//fmt.Println(ast)
-	//fmt.Println(ast.stringify())
+	fmt.Println(ast.stringify())
 
 	main_func := Structure{
 		structureCode["ST_FUNCTION"],

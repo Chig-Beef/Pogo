@@ -255,8 +255,10 @@ func (l *Lexer) lex(input []byte) []Token {
 				}
 			}
 
-			if num[dot_index-1] == '_' || num[dot_index+1] == '_' {
-				log.Fatal("[Lex (lex)] Cannot place underscores next to dots in numbers on " + strconv.Itoa(l.line))
+			if dot_index != -1 {
+				if num[dot_index-1] == '_' || num[dot_index+1] == '_' {
+					log.Fatal("[Lex (lex)] Cannot place underscores next to dots in numbers on " + strconv.Itoa(l.line))
+				}
 			}
 
 			token = Token{tokenCode["L_INT"], num, l.line}

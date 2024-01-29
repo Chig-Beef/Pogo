@@ -89,6 +89,13 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 		pIndex := 0
 
 		for i+1 < len(s.children) {
+
+			if fn.params[pIndex] == "any" {
+				i += 2
+				pIndex++
+				continue
+			}
+
 			if s.children[i].code != structureCode["IDENTIFIER"] {
 				switch s.children[i].code {
 				case structureCode["L_STRING"]:
@@ -174,12 +181,81 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 		}
 	}
 
-	for i := 0; i < len(s.children); i++ {
-		err := a.analyze(s.children[i], vars, funcs)
-		if err != nil {
-			return err
+	if s.code == structureCode["ST_DECLARATION"] {
+		name := s.children[0].text
+		var variable Variable
+		var valid bool
+		for i := 0; i < len(vars); i++ {
+			valid = false
+			if name == vars[i].name {
+				valid = true
+				variable = vars[i]
+				break
+			}
 		}
 
+		if !valid {
+			return createError([]string{"analyze.go", "analyze:ST_DECLARATION"}, "An uninitialized variable was used in a declaration", s.line)
+		}
+
+		i := 0
+		for i < len(s.children[4].children) {
+			if s.children[4].children[i].code != structureCode["IDENTIFIER"] {
+				switch s.children[4].children[i].code {
+				case structureCode["L_STRING"]:
+					if variable.varType != "string" {
+						return createError([]string{"analyze.go", "analyze:ST_DECLARATION"}, "Excpected "+variable.varType+" got string in declaration", s.line)
+					}
+				case structureCode["L_BOOL"]:
+					if variable.varType != "bool" {
+						return createError([]string{"analyze.go", "analyze:ST_DECLARATION"}, "Excpected "+variable.varType+" got bool in declaration", s.line)
+					}
+				case structureCode["L_INT"]:
+					valid := false
+					types := []string{"int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "byte", "float32", "float64"}
+					for j := 0; j < len(types); j++ {
+						if types[j] == variable.varType {
+							valid = true
+							break
+						}
+					}
+					if !valid {
+						return createError([]string{"analyze.go", "analyze:ST_DECLARATION"}, "Excpected "+variable.varType+" got int in declaration", s.line)
+					}
+				case structureCode["ST_CALL"]:
+					var insideCall Function
+
+					name := s.children[4].children[i].children[0].text
+					var valid bool
+					for i := 0; i < len(funcs); i++ {
+						valid = false
+						if name == funcs[i].name {
+							valid = true
+							insideCall = funcs[i]
+							break
+						}
+					}
+					if !valid {
+						return createError([]string{"analyze.go", "analyze:ST_DECLARATION"}, "An attempt to call the non-existent function \""+name+"\" was made", s.line)
+					}
+
+					if variable.varType != insideCall.varType {
+						return createError([]string{"analyze.go", "analyze:ST_DECLARATION"}, "\""+name+"\" is the wrong type, expected "+variable.varType+" got "+insideCall.varType, s.line)
+					}
+
+				default:
+					return createError([]string{"analyze.go", "analyze:ST_CALL"}, "How did you even...? "+variable.name, s.line)
+				}
+				i += 2
+				continue
+			}
+
+			i += 2
+		}
+
+	}
+
+	for i := 0; i < len(s.children); i++ {
 		if s.children[i].code == structureCode["ST_DECLARATION"] {
 			n := s.children[i].children[0] // IDENTIFIER - name
 			t := s.children[i].children[2] // IDENTIFIER - type
@@ -204,6 +280,10 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 
 			f := Function{n.text, params, t.text}
 			funcs = append(funcs, f)
+		}
+		err := a.analyze(s.children[i], vars, funcs)
+		if err != nil {
+			return err
 		}
 	}
 

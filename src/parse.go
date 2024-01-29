@@ -388,18 +388,9 @@ func (p *Parser) statement() (Structure, error) {
 			}
 			s.children = append(s.children, temps...)
 
-			p.setMarker()
-			temp, err := p.call()
+			temp, err := p.expression()
 			if err != nil {
-				p.gotoMarker()
-				temp, err = p.checkTokenChoices([]string{
-					"L_BOOL",
-					"L_INT",
-					"L_STRING",
-				})
-				if err != nil {
-					return s, err
-				}
+				return s, err
 			}
 			s.children = append(s.children, temp)
 		} else if p.peek().code == tokenCode["ASSIGN"] {
@@ -728,14 +719,19 @@ func (p *Parser) expression() (Structure, error) {
 	p.funcLine = append(p.funcLine, "expression")
 	s := createStructure("EXPRESSION", "EXPRESSION", p.curToken.line)
 
-	temp, err := p.checkTokenChoices([]string{
-		"L_BOOL",
-		"L_INT",
-		"L_STRING",
-		"IDENTIFIER",
-	})
+	p.setMarker()
+	temp, err := p.call()
 	if err != nil {
-		return s, err
+		p.gotoMarker()
+		temp, err = p.checkTokenChoices([]string{
+			"L_BOOL",
+			"L_INT",
+			"L_STRING",
+			"IDENTIFIER",
+		})
+		if err != nil {
+			return s, err
+		}
 	}
 	s.children = append(s.children, temp)
 	p.nextToken()
@@ -747,27 +743,39 @@ func (p *Parser) expression() (Structure, error) {
 		"MO_DIV",
 		"MO_MODULO",
 	})
-	if err != nil {
-		p.rollBack()
-		p.funcLine = p.funcLine[:len(p.funcLine)-1]
-		return s, nil // Could be a single literal, so we don't error
-	}
-	s.children = append(s.children, temp)
-	p.nextToken()
 
-	temp, err = p.checkTokenChoices([]string{
-		"L_BOOL",
-		"L_INT",
-		"L_STRING",
-		"IDENTIFIER",
-	})
-	if err != nil {
-		return s, err
-	}
-	s.children = append(s.children, temp)
+	for err == nil {
+		s.children = append(s.children, temp)
+		p.nextToken()
 
+		p.setMarker()
+		temp, err = p.call()
+		if err != nil {
+			p.gotoMarker()
+			temp, err = p.checkTokenChoices([]string{
+				"L_BOOL",
+				"L_INT",
+				"L_STRING",
+				"IDENTIFIER",
+			})
+			if err != nil {
+				return s, err
+			}
+		}
+		s.children = append(s.children, temp)
+		p.nextToken()
+
+		temp, err = p.checkTokenChoices([]string{
+			"MO_PLUS",
+			"MO_SUB",
+			"MO_MUL",
+			"MO_DIV",
+			"MO_MODULO",
+		})
+	}
+	p.rollBack()
 	p.funcLine = p.funcLine[:len(p.funcLine)-1]
-	return s, nil
+	return s, nil // Could be a single literal, or as many items as we need
 }
 
 func (p *Parser) comparison() (Structure, error) {
