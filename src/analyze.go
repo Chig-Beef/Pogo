@@ -253,6 +253,11 @@ func (a *Analyzer) analyze(s Structure, vars []Variable, funcs []Function) error
 			i += 2
 		}
 
+	} else if s.code == structureCode["ST_FOR"] {
+		n := s.children[1] // IDENTIFIER - name
+		t := "int"         // IDENTIFIER - type
+		v := Variable{n.text, t}
+		vars = append(vars, v)
 	}
 
 	for i := 0; i < len(s.children); i++ {
